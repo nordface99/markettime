@@ -1,3 +1,34 @@
+// Test function to verify London market status
+function testMarketStatus() {
+    const londonTime = new Date().toLocaleString("en-US", { timeZone: "Europe/London" });
+    const londonDate = new Date(londonTime);
+    const londonHours = londonDate.getHours();
+    const londonMinutes = londonDate.getMinutes();
+    
+    console.log('London Time:', londonTime);
+    console.log('London Hours:', londonHours);
+    console.log('London Minutes:', londonMinutes);
+    console.log('Should be open:', londonHours >= 8 && londonHours < 16);
+    
+    // Update display with raw data for debugging
+    const debugInfo = document.createElement('div');
+    debugInfo.style.background = '#f8f9fa';
+    debugInfo.style.padding = '10px';
+    debugInfo.style.marginTop = '10px';
+    debugInfo.style.borderRadius = '5px';
+    debugInfo.innerHTML = `
+        <strong>Debug Info:</strong><br>
+        London Local Time: ${londonTime}<br>
+        London Hours: ${londonHours}<br>
+        Should be open: ${londonHours >= 8 && londonHours < 16 ? 'YES' : 'NO'}
+    `;
+    
+    document.getElementById('market-time').appendChild(debugInfo);
+}
+
+// Call this function to verify
+// testMarketStatus();
+
 class MarketAlertApp {
     constructor() {
         this.marketTimeManager = null;
