@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Market Alert</title>
+    <link rel="stylesheet" href="styles/style.css">
+    <link rel="manifest" href="manifest.json">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-globe"></i> Global Market Alert</h1>
+            <div class="current-time" id="currentTime"></div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" data-tab="market-time">Market Times</button>
+            <button class="tab-button" data-tab="economic-calendar">Economic Calendar</button>
+            <button class="tab-button" data-tab="alerts">Alerts Settings</button>
+        </div>
+
+        <!-- Market Time Section -->
+        <div id="market-time" class="tab-content active">
+            <div class="section-header">
+                <h2><i class="fas fa-clock"></i> Global Market Sessions</h2>
+                <button id="refreshMarkets" class="refresh-btn">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            
+            <div class="market-sessions" id="marketSessions">
+                <!-- Market sessions will be loaded here -->
+            </div>
+
+            <div class="next-bell">
+                <h3><i class="fas fa-bell"></i> Next Market Bell</h3>
+                <div id="nextBellInfo">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Economic Calendar Section -->
+        <div id="economic-calendar" class="tab-content">
+            <div class="section-header">
+                <h2><i class="fas fa-calendar-alt"></i> Forex Economic Calendar</h2>
+                <div class="date-filter">
+                    <select id="timeFrame">
+                        <option value="today">Today</option>
+                        <option value="tomorrow">Tomorrow</option>
+                        <option value="week">This Week</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="currency-filter">
+                <div class="currency-buttons" id="currencyFilters">
+                    <!-- Currency filters will be generated here -->
+                </div>
+            </div>
+
+            <div class="economic-events" id="economicEvents">
+                <!-- Economic events will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Alerts Settings Section -->
+        <div id="alerts" class="tab-content">
+            <div class="section-header">
+                <h2><i class="fas fa-bell"></i> Alert Settings</h2>
+            </div>
+
+            <div class="alert-settings">
+                <div class="setting-group">
+                    <h3>Market Bell Alerts</h3>
+                    <div class="toggle-group">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="marketOpenAlert" checked>
+                            <span class="toggle-slider"></span>
+                            Market Opening Bells
+                        </label>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="marketCloseAlert" checked>
+                            <span class="toggle-slider"></span>
+                            Market Closing Bells
+                        </label>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Economic Calendar Alerts</h3>
+                    <div class="impact-levels">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="highImpact" checked>
+                            <span class="toggle-slider"></span>
+                            High Impact Events
+                        </label>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="mediumImpact">
+                            <span class="toggle-slider"></span>
+                            Medium Impact Events
+                        </label>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="lowImpact">
+                            <span class="toggle-slider"></span>
+                            Low Impact Events
+                        </label>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Alert Methods</h3>
+                    <div class="alert-methods">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="browserNotifications" checked>
+                            <span class="toggle-slider"></span>
+                            Browser Notifications
+                        </label>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="soundAlert">
+                            <span class="toggle-slider"></span>
+                            Sound Alerts
+                        </label>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Alert Timing</h3>
+                    <div class="timing-settings">
+                        <label>
+                            Alert Before Market Bell (minutes):
+                            <input type="number" id="bellAlertTime" value="5" min="1" max="60">
+                        </label>
+                        <label>
+                            Alert Before Economic Event (minutes):
+                            <input type="number" id="eventAlertTime" value="15" min="1" max="120">
+                        </label>
+                    </div>
+                </div>
+
+                <button id="saveSettings" class="save-btn">
+                    <i class="fas fa-save"></i> Save Settings
+                </button>
+            </div>
+        </div>
+
+        <!-- Notification Container -->
+        <div id="notificationContainer" class="notification-container"></div>
+    </div>
+
+    <!-- Audio for alerts -->
+    <audio id="alertSound" src="https://assets.mixkit.co/active_storage/sfx/286/286-preview.mp3" preload="auto"></audio>
+
+    <script src="js/market-time.js"></script>
+    <script src="js/economic-calendar.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
