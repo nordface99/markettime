@@ -1,8 +1,13 @@
 class EconomicCalendarManager {
     constructor() {
         this.events = [];
-        this.currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'NZD', 'CHF'];
+        this.currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'NZD', 'CHF', 'CNY'];
         this.selectedCurrencies = new Set(['USD', 'EUR', 'GBP', 'JPY']);
+        this.impactColors = {
+            'high': '#dc3545',
+            'medium': '#ffc107',
+            'low': '#28a745'
+        };
         this.init();
     }
 
@@ -10,15 +15,29 @@ class EconomicCalendarManager {
         this.createCurrencyFilters();
         await this.loadEconomicEvents();
         setInterval(() => this.loadEconomicEvents(), 300000); // Reload every 5 minutes
+        setInterval(() => this.checkUpcomingEvents(), 60000); // Check events every minute
     }
 
     createCurrencyFilters() {
         const container = document.getElementById('currencyFilters');
         if (!container) return;
 
+        const currencyNames = {
+            'USD': 'US Dollar',
+            'EUR': 'Euro',
+            'GBP': 'British Pound',
+            'JPY': 'Japanese Yen',
+            'CAD': 'Canadian Dollar',
+            'AUD': 'Australian Dollar',
+            'NZD': 'New Zealand Dollar',
+            'CHF': 'Swiss Franc',
+            'CNY': 'Chinese Yuan'
+        };
+
         container.innerHTML = this.currencies.map(currency => `
             <button class="currency-btn ${this.selectedCurrencies.has(currency) ? 'active' : ''}" 
-                    data-currency="${currency}">
+                    data-currency="${currency}"
+                    title="${currencyNames[currency]}">
                 ${currency}
             </button>
         `).join('');
@@ -40,48 +59,130 @@ class EconomicCalendarManager {
 
     async loadEconomicEvents() {
         try {
-            // In a real app, you would fetch from an API
-            // For demo purposes, we'll generate mock data
-            this.events = this.generateMockEvents();
-            this.displayEvents();
+            // Try to fetch from free economic calendar API
+            await this.fetchRealEconomicEvents();
         } catch (error) {
-            console.error('Error loading economic events:', error);
+            console.log('Falling back to mock data:', error);
+            this.events = this.generateRealisticEvents();
+        }
+        this.displayEvents();
+    }
+
+    async fetchRealEconomicEvents() {
+        // Using Forex Factory's public data (example)
+        const response = await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json');
+        if (response.ok) {
+            const data = await response.json();
+            this.events = this.processApiData(data);
+        } else {
+            throw new Error('API not available');
         }
     }
 
-    generateMockEvents() {
+    processApiData(apiData) {
+        return apiData.map(item => {
+            const eventDate = new Date(item.date);
+            const impact = this.mapImpactLevel(item.impact);
+            
+            return {
+                currency: item.currency,
+                event: item.title,
+                date: eventDate,
+                impact: impact,
+                forecast: item.forecast,
+                previous: item.previous,
+                actual: item.actual,
+                country: item.country
+            };
+        }).filter(event => 
+            event.currency && 
+            this.currencies.includes(event.currency) &&
+            event.date > new Date()
+        ).sort((a, b) => a.date - b.date);
+    }
+
+    mapImpactLevel(impact) {
+        switch(impact) {
+            case 'High': return 'high';
+            case 'Medium': return 'medium';
+            case 'Low': return 'low';
+            default: return 'low';
+        }
+    }
+
+    generateRealisticEvents() {
         const events = [];
-        const eventTypes = {
-            'USD': ['Non-Farm Payrolls', 'CPI', 'GDP', 'Retail Sales', 'Fed Interest Rate Decision'],
-            'EUR': ['GDP', 'CPI', 'ECB Interest Rate Decision', 'German ZEW Economic Sentiment'],
-            'GBP': ['GDP', 'CPI', 'BOE Interest Rate Decision', 'Retail Sales'],
-            'JPY': ['GDP', 'CPI', 'BOJ Interest Rate Decision', 'Tankan Survey'],
-            'CAD': ['GDP', 'CPI', 'BOC Interest Rate Decision', 'Employment Change'],
-            'AUD': ['GDP', 'CPI', 'RBA Interest Rate Decision', 'Employment Change'],
-            'NZD': ['GDP', 'CPI', 'RBNZ Interest Rate Decision'],
-            'CHF': ['GDP', 'CPI', 'SNB Interest Rate Decision']
+        const now = new Date();
+        
+        const eventTemplates = {
+            'USD': [
+                { name: 'Non-Farm Payrolls', impact: 'high', time: [8, 30] },
+                { name: 'CPI Inflation', impact: 'high', time: [8, 30] },
+                { name: 'Federal Funds Rate', impact: 'high', time: [14, 0] },
+                { name: 'GDP Growth Rate', impact: 'high', time: [8, 30] },
+                { name: 'Retail Sales', impact: 'medium', time: [8, 30] },
+                { name: 'Unemployment Rate', impact: 'medium', time: [8, 30] }
+            ],
+            'EUR': [
+                { name: 'ECB Interest Rate Decision', impact: 'high', time: [12, 45] },
+                { name: 'German ZEW Economic Sentiment', impact: 'medium', time: [10, 0] },
+                { name: 'CPI Flash Estimate', impact: 'high', time: [10, 0] },
+                { name: 'German GDP', impact: 'medium', time: [8, 0] }
+            ],
+            'GBP': [
+                { name: 'BOE Interest Rate Decision', impact: 'high', time: [12, 0] },
+                { name: 'CPI Inflation', impact: 'high', time: [7, 0] },
+                { name: 'GDP Growth Rate', impact: 'medium', time: [7, 0] },
+                { name: 'Retail Sales', impact: 'medium', time: [7, 0] }
+            ],
+            'JPY': [
+                { name: 'BOJ Interest Rate Decision', impact: 'high', time: [3, 0] },
+                { name: 'Tokyo CPI Inflation', impact: 'medium', time: [0, 30] },
+                { name: 'GDP Growth Rate', impact: 'medium', time: [1, 0] }
+            ]
         };
 
-        const impacts = ['high', 'medium', 'medium', 'low']; // Weighted distribution
-
-        this.currencies.forEach(currency => {
-            eventTypes[currency].forEach(eventName => {
-                const impact = impacts[Math.floor(Math.random() * impacts.length)];
-                const eventDate = new Date();
-                eventDate.setHours(eventDate.getHours() + Math.floor(Math.random() * 48));
-                
-                events.push({
-                    currency: currency,
-                    event: eventName,
-                    date: eventDate,
-                    impact: impact,
-                    forecast: (Math.random() * 5 - 2.5).toFixed(1) + '%',
-                    previous: (Math.random() * 5 - 2.5).toFixed(1) + '%'
+        // Generate events for the next 3 days
+        for (let day = 0; day < 3; day++) {
+            const eventDate = new Date(now);
+            eventDate.setDate(now.getDate() + day);
+            
+            Object.keys(eventTemplates).forEach(currency => {
+                eventTemplates[currency].forEach(template => {
+                    if (Math.random() > 0.3) { // 70% chance to include each event
+                        const eventTime = new Date(eventDate);
+                        eventTime.setHours(template.time[0], template.time[1], 0, 0);
+                        
+                        // Add some random variation in timing
+                        eventTime.setHours(eventTime.getHours() + Math.floor(Math.random() * 3) - 1);
+                        
+                        if (eventTime > now) {
+                            events.push({
+                                currency: currency,
+                                event: template.name,
+                                date: eventTime,
+                                impact: template.impact,
+                                forecast: this.generateForecast(),
+                                previous: this.generatePrevious(),
+                                actual: null
+                            });
+                        }
+                    }
                 });
             });
-        });
+        }
 
         return events.sort((a, b) => a.date - b.date);
+    }
+
+    generateForecast() {
+        const values = ['0.2%', '0.3%', '0.1%', '-0.1%', '0.5%', '1.2M', '235K', '2.5%', '3.1%'];
+        return values[Math.floor(Math.random() * values.length)];
+    }
+
+    generatePrevious() {
+        const values = ['0.1%', '0.4%', '0.2%', '0.0%', '0.3%', '1.1M', '240K', '2.3%', '3.0%'];
+        return values[Math.floor(Math.random() * values.length)];
     }
 
     displayEvents() {
@@ -93,7 +194,13 @@ class EconomicCalendarManager {
         );
 
         if (filteredEvents.length === 0) {
-            container.innerHTML = '<div class="no-events">No economic events found for selected currencies</div>';
+            container.innerHTML = `
+                <div class="no-events">
+                    <i class="fas fa-calendar-times"></i>
+                    <h3>No economic events found</h3>
+                    <p>Try selecting different currencies or check back later.</p>
+                </div>
+            `;
             return;
         }
 
@@ -104,18 +211,34 @@ class EconomicCalendarManager {
                 timeZoneName: 'short'
             });
 
+            const dateString = event.date.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            const timeUntil = this.getTimeUntilEvent(event.date);
+            
             return `
                 <div class="economic-event ${event.impact}-impact">
                     <div class="event-header">
-                        <span class="event-currency">${event.currency} - ${event.event}</span>
+                        <div class="event-main">
+                            <span class="event-currency">${event.currency}</span>
+                            <span class="event-name">${event.event}</span>
+                        </div>
                         <span class="event-impact impact-${event.impact}">
                             ${event.impact.toUpperCase()} IMPACT
                         </span>
                     </div>
                     <div class="event-details">
-                        <div class="event-time">${event.date.toLocaleDateString()} ${timeString}</div>
-                        <div class="event-forecast">
-                            Forecast: ${event.forecast} | Previous: ${event.previous}
+                        <div class="event-time">
+                            <i class="fas fa-clock"></i>
+                            ${dateString} ${timeString}
+                            <span class="time-until">(${timeUntil})</span>
+                        </div>
+                        <div class="event-data">
+                            <span class="forecast">Forecast: ${event.forecast}</span>
+                            <span class="previous">Previous: ${event.previous}</span>
                         </div>
                     </div>
                 </div>
@@ -123,26 +246,59 @@ class EconomicCalendarManager {
         }).join('');
     }
 
+    getTimeUntilEvent(eventDate) {
+        const now = new Date();
+        const diffMs = eventDate - now;
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        
+        if (diffHours > 24) {
+            const days = Math.floor(diffHours / 24);
+            return `in ${days} day${days > 1 ? 's' : ''}`;
+        } else if (diffHours > 0) {
+            return `in ${diffHours}h ${diffMinutes}m`;
+        } else if (diffMinutes > 0) {
+            return `in ${diffMinutes}m`;
+        } else {
+            return 'now';
+        }
+    }
+
     filterEvents() {
         this.displayEvents();
     }
 
     checkUpcomingEvents() {
-        // Check for events happening soon and trigger alerts
         const now = new Date();
         const alertThreshold = 15 * 60 * 1000; // 15 minutes
         
         this.events.forEach(event => {
-            const timeDiff = event.date - now;
-            if (timeDiff > 0 && timeDiff <= alertThreshold) {
-                // Trigger alert
-                this.triggerEventAlert(event);
+            if (this.selectedCurrencies.has(event.currency)) {
+                const timeDiff = event.date - now;
+                if (timeDiff > 0 && timeDiff <= alertThreshold) {
+                    this.triggerEventAlert(event);
+                }
             }
         });
     }
 
     triggerEventAlert(event) {
-        // This would integrate with the notification system
-        console.log(`Alert: ${event.currency} ${event.event} in 15 minutes!`);
+        const alertKey = `event_${event.currency}_${event.event}_${event.date.getTime()}`;
+        const lastAlert = localStorage.getItem(alertKey);
+        
+        if (!lastAlert) {
+            const message = `${event.currency} ${event.event} in 15 minutes! (${event.impact} impact)`;
+            
+            // Show notification
+            if (Notification.permission === 'granted') {
+                new Notification('Economic Event Alert', {
+                    body: message,
+                    icon: '/icon.png'
+                });
+            }
+            
+            console.log(`ALERT: ${message}`);
+            localStorage.setItem(alertKey, Date.now().toString());
+        }
     }
 }
